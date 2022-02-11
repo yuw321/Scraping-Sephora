@@ -1,19 +1,20 @@
 import requests
 from bs4 import BeautifulSoup
-
+print("finished import")
 # Get Response of "brandlist" Website from Sephora
-band_lst_link = "https://www.sephora.com/brands-list"
-response = requests.get(band_lst_link)
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64)'}
+band_lst_link = "https://www.sephora.com/brands-sitemap.xml"
+response = requests.get(band_lst_link,headers=headers)
 
 # Use BeautifulSoup
-soup = BeautifulSoup(response.content, 'html.parser')
+soup = BeautifulSoup(response.text, 'html.parser')
 
 # Scraping brand links and save them into a list
 brand_link_lst = []
-main_box = soup.find_all(attrs={"data-comp": "BrandsList Container Box "})[0]
-for brand in main_box.find_all('li'):
-    brand_link_lst.append("https://www.sephora.com" +
-                          brand.a.attrs['href']+"/all?pageSize=300")
+main_box = soup.find_all('url')
+
+for x in range(len(main_box)):
+    brand_link_lst.append(main_box[x].find('loc').text)
 
 # Write brand links into a file:
 with open('data/brand_link.txt', 'w') as f:
