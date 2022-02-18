@@ -1,93 +1,142 @@
 import re
+import time
 
 import pandas as pd
+from pygments import highlight
 import requests
 from bs4 import BeautifulSoup
 
+#headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36'}
 
 def get_data(product_link, px_list=None):
-    """Get product information"""
-    data_dic = {'pd_id': [], 'size_and_item': [], 'category': [],
-                'price': [], 'love_count': [], 'reviews_count': []}
+    #"""Get product information"""
+    print('0%')
+    data_dic = {'pd_name':[],'pd_id': [], 'pd_brand':[],'pd_category': [],
+                'size_and_item': [],'price': [], 'love_count': [],
+                'reviews_count': [],'rating':[],'highlights':[],'description':[],'ingredients':[]}
     px_idx = 0
     proxy = None if px_list is None else px_list[px_idx]
+    print("10%")
+    #while True:
+    print('12%')
+    #try:
+    response = requests.get(product_link, headers=headers,timeout=10)
+    print('15%')
+    #except:
+        # if px_idx == len(px_list) - 1:
+        #     px_idx = 0
+        # else:
+        #     px_idx += 1
+        # proxy = px_list[px_idx]
+        # continue
+    print('20%')
+    html = response.text
+    soup = BeautifulSoup(html, 'html.parser')
+    #as of 02/18/22, class label for pd_name is css-1pgnl76 eanm77i0 
+    data_dic['pd_name']= soup.find('span',attrs={'data-at':"product_name"}).text.strip()
 
-    while True:
-        try:
-            response = requests.get(product_link, proxies={
-                "http": proxy, "https": proxy}, timeout=15)
-        except:
-            if px_idx == len(px_list) - 1:
-                px_idx = 0
-            else:
-                px_idx += 1
-            proxy = px_list[px_idx]
-            continue
+    data_dic['pd_id'] = re.findall(R'P[0-9]{3,6}', product_link)[0]
+    
+    #as of 02/18/22, class label for pd_brand is css-1gyh3op e65zztl0
+    data_dic['pd_brand']= soup.find('a',attrs={'data-at':"brand_name"}).text.strip()
 
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        data_dic['pd_id'] = re.findall(R'P[0-9]{3,6}', product_link)[0]
+    print('40%')
+    # Get Category
+    try:
+        cat_box = soup.find_all(class_="css-sdfa4l eanm77i0")
+        print(cat_box)
+        cat_list = [cat.string for cat in cat_box.find_all('a')]
+        category = ', '.join(cat_list)
+    except:
+        category = None
 
-        # Get Category
-        try:
-            cat_box = soup.find_all(attrs={'data-comp': 'BreadCrumbs '})[0]
-            cat_list = [cat.string for cat in cat_box.find_all('a')]
-            category = ', '.join(cat_list)
-        except:
-            category = None
+    # Size and Content(unmodified)
+    try:
+        size_and_item = soup.find(
+            attrs={"data-comp": "SizeAndItemNumber Box "}).get_text()
+    except:
+        size_and_item = None
 
-        # Size and Content
-        try:
-            size_and_item = soup.find(
-                attrs={"data-comp": "SizeAndItemNumber Box "}).get_text()
-        except:
-            size_and_item = None
+    # Get Price(unmodified)
+    try:
+        price = soup.find_all(attrs={'data-comp': 'Price Box '})[0].get_text()
+    except:
+        price = None
+    print('60%')
+    # Get love counts(unmodified)
+    try:
+        love_count = soup.find('span', attrs={
+            "data-at": "product_love_count"}).get_text()
+    except:
+        love_count = None
 
-        # Get Price
-        try:
-            price = soup.find_all(attrs={'data-comp': 'Price Box '})[
-                0].get_text()
-        except:
-            price = None
+    # review nums(unmodified)
+    try:
+        link_json = soup.find(attrs={"id": "linkJSON"})
+        json_str = str(link_json)
+        reviews = re.findall(R'\"reviews\":(.*?)\,', json_str)
+        reviews_count = reviews[0]
+    except:
+        reviews_count = None
 
-        # Get love counts
-        try:
-            love_count = soup.find('span', attrs={
-                "data-at": "product_love_count"}).get_text()
-        except:
-            love_count = None
+    #rating
+    #as of 02/18/22, class label for ratings is css-1tbjoxk
+    try:
+        rating = soup.find('span',class_ = 'css-1tbjoxk')['aria-label'].get_text()
+    except:
+        rating = None
+    
+    #highlights
+    #as of 02/18/22, class label for highlights is css-aiipho eanm77i0
+    try:
+        highlights = soup.find('div',class_ = 'css-aiipho eanm77i0').get_text()
+    except:
+        highlights = None
+    
+    #description
+    #as of 02/18/22, class label for description is css-1h78hvu eanm77i0
+    try:
+        description = soup.find('div',class_ = 'css-1h78hvu eanm77i0').get_text()
+    except:
+        description = None  
 
-        # review nums
-        try:
-            link_json = soup.find(attrs={"id": "linkJSON"})
-            json_str = str(link_json)
-            reviews = re.findall(R'\"reviews\":(.*?)\,', json_str)
-            reviews_count = reviews[0]
-        except:
-            reviews_count = None
+    #ingredients
+    #as of 02/18/22, class label for ingredients is css-1ue8dmw eanm77i0
+    try:
+        ingredients = soup.find('div',class_ = 'css-1ue8dmw eanm77i0').get_text()
+    except:
+        ingredients = None  
+    print('80%')      
 
-        data_dic['category'] = category
-        data_dic['size_and_item'] = size_and_item
-        data_dic['love_count'] = love_count
-        data_dic['reviews_count'] = reviews_count
-        data_dic['price'] = price
-        break
+    data_dic['category'] = category
+    data_dic['size_and_item'] = size_and_item
+    data_dic['price'] = price
+    data_dic['love_count'] = love_count
+    data_dic['reviews_count'] = reviews_count
+    data_dic['rating'] = rating
+    data_dic['highlights'] = highlights
+    data_dic['description'] = description
+    data_dic['ingredients'] = ingredients
+    print('90%')
+    #break
+    print('100%')
     return data_dic
 
 
-px_list_ = ['140.227.173.230:1000', '140.227.224.177:1000',
-            '140.227.225.38:1000', '140.227.237.154:1000',
-            '40.227.174.216:1000', '140.227.175.225:1000',
-            '140.227.229.208:3128', '155.138.135.199:8080',
-            '149.28.54.243:8080', '64.188.3.162:3128',
-            '165.22.211.212:3128']
-
+#px_list_ = ['140.227.211.47:8080', '98.12.195.129:443','149.19.224.49:3128']
+http_proxy  = "http://107.151.182.247:80"
+https_proxy = "https://140.227.211.47:8080"
+proxyDict = {
+    "http"  : http_proxy, 
+    "https" : https_proxy
+}
 pd_links_df = pd.read_csv('data/product_links.csv')
 product_links = pd_links_df['product_links']
 
 result = []
 for i, link in enumerate(product_links[:]):
-    result.append(get_data(link, px_list_))
+    result.append(get_data(link))
     pd_df = pd.DataFrame(result)
     pd_df.to_csv('data/pd_info.csv', index=False)
     print(f'{i + 1:04d} / {len(product_links)} || {link}')

@@ -20,7 +20,6 @@ def scape_product(link, proxy=None):
     
     try:
         productLinkList = soup.find_all("a",attrs={"data-comp": "ProductTile "})
-        productLinkListLazy = soup.find_all("a",attrs={"data-comp": "LazyLoad ProductTile "})
     # There might be no products for that brand
     except IndexError:
         return []
