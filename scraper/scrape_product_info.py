@@ -42,55 +42,56 @@ def get_data(product_link, px_list=None):
     data_dic['pd_brand']= soup.find('a',attrs={'data-at':"brand_name"}).text.strip()
 
     print('40%')
-    # Get Category
+    # Get Category (NEED work!)
     try:
-        cat_box = soup.find_all(class_="css-sdfa4l eanm77i0")
-        print(cat_box)
+        cat_box = soup.find_all(attrs={'class':"css-9w1s77 e65zztl0"})
         cat_list = [cat.string for cat in cat_box.find_all('a')]
         category = ', '.join(cat_list)
+        print(category)
     except:
         category = None
 
-    # Size and Content(unmodified)
+    # Size and Content
     try:
-        size_and_item = soup.find(
-            attrs={"data-comp": "SizeAndItemNumber Box "}).get_text()
+        size_and_item = soup.find('div',attrs={"data-at": "sku_name_label"}).get_text()
+        #print(size_and_item)
     except:
         size_and_item = None
 
-    # Get Price(unmodified)
+    # Get Price
     try:
-        price = soup.find_all(attrs={'data-comp': 'Price Box '})[0].get_text()
+        price = soup.find('b',attrs={'class':"css-0"}).get_text()
+        #print(price)
     except:
         price = None
     print('60%')
-    # Get love counts(unmodified)
+
+    # Get love counts
     try:
-        love_count = soup.find('span', attrs={
-            "data-at": "product_love_count"}).get_text()
+        love_count = soup.find( attrs={"class": "css-jk94q9"}).get_text()
+        #print(love_count)
     except:
         love_count = None
 
     # review nums(unmodified)
     try:
-        link_json = soup.find(attrs={"id": "linkJSON"})
-        json_str = str(link_json)
-        reviews = re.findall(R'\"reviews\":(.*?)\,', json_str)
-        reviews_count = reviews[0]
+        reviews_count = soup.find(attrs={"class": "css-1coslxg"}).get_text()
+        print(reviews_count)
     except:
         reviews_count = None
 
     #rating
     #as of 02/18/22, class label for ratings is css-1tbjoxk
     try:
-        rating = soup.find('span',class_ = 'css-1tbjoxk')['aria-label'].get_text()
+        rating = soup.find(attrs={'class': 'css-1tbjoxk'})
+        rating = rating['aria-label']
     except:
         rating = None
     
     #highlights
     #as of 02/18/22, class label for highlights is css-aiipho eanm77i0
     try:
-        highlights = soup.find('div',class_ = 'css-aiipho eanm77i0').get_text()
+        highlights = soup.find(attrs={'class':'css-aiipho eanm77i0'}).get_text()
     except:
         highlights = None
     
