@@ -76,7 +76,7 @@ def get_data(product_link, px_list=None):
     # review nums(unmodified)
     try:
         reviews_count = soup.find(attrs={"class": "css-1coslxg"}).get_text()
-        print(reviews_count)
+        #print(reviews_count)
     except:
         reviews_count = None
 
@@ -91,7 +91,8 @@ def get_data(product_link, px_list=None):
     #highlights
     #as of 02/18/22, class label for highlights is css-aiipho eanm77i0
     try:
-        highlights = soup.find(attrs={'class':'css-aiipho eanm77i0'}).get_text()
+        highlights = soup.find(class_="css-16qu4bq eanm77i0")
+        #print(highlights)
     except:
         highlights = None
     
@@ -105,7 +106,8 @@ def get_data(product_link, px_list=None):
     #ingredients
     #as of 02/18/22, class label for ingredients is css-1ue8dmw eanm77i0
     try:
-        ingredients = soup.find('div',class_ = 'css-1ue8dmw eanm77i0').get_text()
+        ingredients = soup.find(attrs = {'id': 'ingredients'})
+        print(ingredients)
     except:
         ingredients = None  
     print('80%')      
