@@ -5,6 +5,7 @@ import pandas as pd
 from pygments import highlight
 import requests
 from bs4 import BeautifulSoup
+from selenium import webdriver
 
 #headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36'}
@@ -12,16 +13,17 @@ headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleW
 def get_data(product_link, px_list=None):
     #"""Get product information"""
     print('0%')
-    data_dic = {'pd_name':[],'pd_id': [], 'pd_brand':[],'pd_category': [],
+    data_dic = {'pd_link':product_link,'pd_name':[],'pd_id': [], 'pd_brand':[],'pd_category': [],
                 'size_and_item': [],'price': [], 'love_count': [],
                 'reviews_count': [],'rating':[],'highlights':[],'description':[],'ingredients':[]}
     px_idx = 0
     proxy = None if px_list is None else px_list[px_idx]
     print("10%")
     #while True:
-    print('12%')
+    driver = webdriver.Chrome("/Users/testadmin/Desktop/Desktop/CS445/GitHub/Scraping-Sephora/scraper/chromedriver")
+    
     #try:
-    response = requests.get(product_link, headers=headers,timeout=10)
+    #response = requests.get(product_link, headers=headers,timeout=10)
     print('15%')
     #except:
         # if px_idx == len(px_list) - 1:
@@ -31,8 +33,8 @@ def get_data(product_link, px_list=None):
         # proxy = px_list[px_idx]
         # continue
     print('20%')
-    html = response.text
-    soup = BeautifulSoup(html, 'html.parser')
+    html = driver.get(product_link) #response.text
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
     #as of 02/18/22, class label for pd_name is css-1pgnl76 eanm77i0 
     data_dic['pd_name']= soup.find('span',attrs={'data-at':"product_name"}).text.strip()
 
@@ -42,15 +44,10 @@ def get_data(product_link, px_list=None):
     data_dic['pd_brand']= soup.find('a',attrs={'data-at':"brand_name"}).text.strip()
 
     print('40%')
-    # Get Category (NEED work!)
     try:
-        cat_box = soup.find_all(attrs={'class':"css-9w1s77 e65zztl0"})
-        cat_list = [cat.string for cat in cat_box.find_all('a')]
-        category = ', '.join(cat_list)
-        print(category)
+        data_dic['pd_category'] = soup.find(attrs={'data-comp':"ProductBreadCrumbs BreadCrumbs BreadCrumbs "}).text.strip()
     except:
-        category = None
-
+        data_dic['pd_category'] = "location mismatch"
     # Size and Content
     try:
         size_and_item = soup.find('div',attrs={"data-at": "sku_name_label"}).get_text()
@@ -60,7 +57,7 @@ def get_data(product_link, px_list=None):
 
     # Get Price
     try:
-        price = soup.find('b',attrs={'class':"css-0"}).get_text()
+        price = soup.find(attrs={'class':"css-1oz9qb"}).get_text()
         #print(price)
     except:
         price = None
@@ -91,7 +88,7 @@ def get_data(product_link, px_list=None):
     #highlights
     #as of 02/18/22, class label for highlights is css-aiipho eanm77i0
     try:
-        highlights = soup.find(class_="css-16qu4bq eanm77i0")
+        highlights = soup.find('div',attrs={'class':"css-16qu4bq eanm77i0"}).text
         #print(highlights)
     except:
         highlights = None
@@ -99,27 +96,34 @@ def get_data(product_link, px_list=None):
     #description
     #as of 02/18/22, class label for description is css-1h78hvu eanm77i0
     try:
-        description = soup.find('div',class_ = 'css-1h78hvu eanm77i0').get_text()
+        description = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/main/div[1]/div[6]/div[2]/div')
     except:
-        description = None  
+        try:
+            description = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/main/div[1]/div[4]/div[2]/div')
+
+        except:
+            description = None
+     
 
     #ingredients
     #as of 02/18/22, class label for ingredients is css-1ue8dmw eanm77i0
     try:
-        ingredients = soup.find(attrs = {'id': 'ingredients'})
-        print(ingredients)
+        ingredients = soup.find(attrs = {'id': 'ingredients'}).get_text()
+        #print(ingredients)
     except:
         ingredients = None  
     print('80%')      
 
-    data_dic['category'] = category
     data_dic['size_and_item'] = size_and_item
     data_dic['price'] = price
     data_dic['love_count'] = love_count
     data_dic['reviews_count'] = reviews_count
     data_dic['rating'] = rating
     data_dic['highlights'] = highlights
-    data_dic['description'] = description
+    if description!= None:
+        data_dic['description'] = description.text
+    else:
+        data_dic['description'] = 'Location mismatch'
     data_dic['ingredients'] = ingredients
     print('90%')
     #break
@@ -134,8 +138,8 @@ proxyDict = {
     "http"  : http_proxy, 
     "https" : https_proxy
 }
-pd_links_df = pd.read_csv('data/product_links.csv')
-product_links = pd_links_df['product_links']
+pd_links_df = pd.read_csv('/Users/testadmin/Desktop/Desktop/CS445/GitHub/Scraping-Sephora/data/product_links.csv')
+product_links = pd_links_df['product_links']#need to manually add "product_links" to cell A1 before running
 
 result = []
 for i, link in enumerate(product_links[:]):
@@ -143,3 +147,5 @@ for i, link in enumerate(product_links[:]):
     pd_df = pd.DataFrame(result)
     pd_df.to_csv('data/pd_info.csv', index=False)
     print(f'{i + 1:04d} / {len(product_links)} || {link}')
+
+
