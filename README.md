@@ -1,7 +1,6 @@
 # Sephora Product Analysis
-  - Start date: 02/2019
-  - FE 290 - Data and Programming for Analytics @ UCI
-  - Author: Shirley Li
+  - Contributor: Yupeng Wei
+  - Orginal Author: Shirley Li
 
 
 Table of Contents
